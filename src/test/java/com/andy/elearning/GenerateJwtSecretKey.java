@@ -6,34 +6,29 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
 public class GenerateJwtSecretKey {
 
-    public static String generateSecretKey(String input) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(input.getBytes("UTF-8"));
+    private static byte[] generateSecretToken() {
+        SecureRandom secureRandom = new SecureRandom();
+        byte[] secretTokenBytes = new byte[64];
+        secureRandom.nextBytes(secretTokenBytes);
+        return secretTokenBytes;
+    }
 
-            byte[] keyBytes = new byte[16];
-            System.arraycopy(hash, 0, keyBytes, 0, 16);
-
-            SecretKey secretKey = new SecretKeySpec(keyBytes, "AES");
-
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : secretKey.getEncoded()) {
-                hexString.append(String.format("%02x", b));
-            }
-
-            return hexString.toString();
-        } catch (NoSuchAlgorithmException | java.io.UnsupportedEncodingException e) {
-            e.printStackTrace();
-            return null;
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder hexStringBuilder = new StringBuilder(2 * bytes.length);
+        for (byte b : bytes) {
+            hexStringBuilder.append(String.format("%02x", b & 0xff));
         }
+        return hexStringBuilder.toString();
     }
 
     @Test
     public void generateSecret(){
-        String jwtSecret = generateSecretKey("daaaaaaaaaaadatsdfajsdjasjdjasdjajsd");
-        System.out.println(jwtSecret);
+        byte[] secretTokenBytes = generateSecretToken();
+        String hexToken = bytesToHex(secretTokenBytes);
+        System.out.println("Generated Secret Token: " + hexToken);
     }
 }
