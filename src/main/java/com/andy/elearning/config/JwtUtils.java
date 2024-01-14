@@ -6,20 +6,17 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.security.Key;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
 @Component
 @Log4j2
-public class JwtTokenUtil implements Serializable {
+public class JwtUtils implements Serializable {
 
     public final static String ROLES = "roles";
 
@@ -38,7 +35,7 @@ public class JwtTokenUtil implements Serializable {
         return claimResolve.apply(claims);
     }
 
-    private Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key())
                 .build()
@@ -68,6 +65,23 @@ public class JwtTokenUtil implements Serializable {
     public boolean isTokenValidate(String token,String username){
         final String sub = extractUsername(token);
         return username.equals(sub) && !isTokeExpired(token);
+    }
+
+    public boolean validateJwtToken(String authToken) {
+        try {
+            Jwts.parserBuilder().setSigningKey(key()).build().parse(authToken);
+            return true;
+        } catch (MalformedJwtException e) {
+            log.error("Invalid JWT token: {}", e.getMessage());
+        } catch (ExpiredJwtException e) {
+            log.error("JWT token is expired: {}", e.getMessage());
+        } catch (UnsupportedJwtException e) {
+            log.error("JWT token is unsupported: {}", e.getMessage());
+        } catch (IllegalArgumentException e) {
+            log.error("JWT claims string is empty: {}", e.getMessage());
+        }
+
+        return false;
     }
 
     private boolean isTokeExpired(String token) {

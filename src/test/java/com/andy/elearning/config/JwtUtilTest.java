@@ -16,7 +16,7 @@ import java.util.Map;
 @Log4j2
 public class JwtUtilTest {
     @Autowired
-    JwtTokenUtil jwtTokenUtil;
+    JwtUtils jwtUtils;
 
     /* setting up test */
     private String username = "dta89uct@gmail.com";
@@ -27,23 +27,23 @@ public class JwtUtilTest {
     public void prepare() {
         List<String> listRoles = new ArrayList<>();
         listRoles.add(adminRole);
-        claims.put(JwtTokenUtil.ROLES, listRoles);
+        claims.put(JwtUtils.ROLES, listRoles);
     }
     /* ending setup test */
 
 
     @Test
     public void generateJwtToken_ReturnJWTTokenAndValid() {
-        String token = jwtTokenUtil.generateToken(claims, username);
-        Assertions.assertTrue(jwtTokenUtil.isTokenValidate(token, username));
+        String token = jwtUtils.generateToken(claims, username);
+        Assertions.assertTrue(jwtUtils.isTokenValidate(token, username));
     }
 
     @Test
     public void extractUsernameFromJwtToken_ReturnUsername() {
-        String token = jwtTokenUtil.generateToken(claims, username);
+        String token = jwtUtils.generateToken(claims, username);
         log.info("token :{}",token);
-        String username = jwtTokenUtil.extractUsername(token);
-        Assertions.assertTrue(jwtTokenUtil.isTokenValidate(token, username));
+        String username = jwtUtils.extractUsername(token);
+        Assertions.assertTrue(jwtUtils.isTokenValidate(token, username));
         Assertions.assertTrue(this.username.equals(username));
     }
 }
