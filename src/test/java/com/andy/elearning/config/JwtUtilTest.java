@@ -1,5 +1,6 @@
 package com.andy.elearning.config;
 
+import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -7,10 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @SpringBootTest
 @Log4j2
@@ -41,6 +39,18 @@ public class JwtUtilTest {
     @Test
     public void extractUsernameFromJwtToken_ReturnUsername() {
         String token = jwtUtils.generateToken(claims, username);
+        log.info("token :{}",token);
+        String username = jwtUtils.extractUsername(token);
+        Assertions.assertTrue(jwtUtils.isTokenValidate(token, username));
+        Assertions.assertTrue(this.username.equals(username));
+    }
+
+    @Test
+    public void extractUsernameFromRefreshToken_ReturnUsername() {
+        Calendar c= Calendar.getInstance();
+        c.add(Calendar.DATE, 30);
+        Date refreshTokenExpirationDate =c.getTime();
+        String token = jwtUtils.generateRefreshToken(username,refreshTokenExpirationDate.getTime());
         log.info("token :{}",token);
         String username = jwtUtils.extractUsername(token);
         Assertions.assertTrue(jwtUtils.isTokenValidate(token, username));

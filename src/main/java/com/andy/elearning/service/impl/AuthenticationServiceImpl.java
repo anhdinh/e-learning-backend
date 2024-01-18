@@ -1,15 +1,16 @@
 package com.andy.elearning.service.impl;
 
 import com.andy.elearning.config.JwtUtils;
-import com.andy.elearning.dto.RoleDto;
 import com.andy.elearning.dto.payload.request.UserLoginRequest;
 import com.andy.elearning.dto.payload.request.UserRegisterRequest;
+import com.andy.elearning.dto.payload.response.RefreshTokenResponse;
 import com.andy.elearning.dto.payload.response.UserLoginResponse;
 import com.andy.elearning.dto.UserDto;
 import com.andy.elearning.entity.Role;
 import com.andy.elearning.entity.User;
 import com.andy.elearning.entity.UserRole;
 import com.andy.elearning.enums.RoleEnum;
+import com.andy.elearning.exeptions.InvalidJwtTokenException;
 import com.andy.elearning.exeptions.UsernameHasAlreadyExistedException;
 import com.andy.elearning.repository.RoleRepository;
 import com.andy.elearning.repository.UserRepository;
@@ -47,31 +48,38 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         User userPrincipal = (User) authentication.getPrincipal();
         Map<String, Object> claims = new HashMap<>();
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        Set<String> roleDtoSet = userPrincipal.getAuthorities().stream().map(item ->item.getAuthority()).collect(Collectors.toSet());
+        Set<String> roleDtoSet = userPrincipal.getAuthorities().stream().map(item -> item.getAuthority()).collect(Collectors.toSet());
         claims.put(JwtUtils.ROLES, roleDtoSet);
         String jwt = jwtUtils.generateToken(claims, userPrincipal.getUsername());
+        Date refreshTokenExpirationDate = createRefreshTokenExpirateDate();
+        String refreshToken = jwtUtils.generateRefreshToken(userPrincipal.getUsername(), refreshTokenExpirationDate.getTime());
         UserLoginResponse response = UserLoginResponse.builder()
-                .jwtToken(jwt).username(loginRequest.getUsername()).roles(roleDtoSet).refreshToken("non-set").build();
+                .jwtToken(jwt).username(loginRequest.getUsername()).roles(roleDtoSet).refreshToken(refreshToken).build();
         return response;
+    }
+
+    private Date createRefreshTokenExpirateDate() {
+        Calendar c = Calendar.getInstance();
+        c.add(Calendar.DATE, 30);
+        Date refreshTokenExpirationDate = c.getTime();
+        return refreshTokenExpirationDate;
     }
 
     @Transactional
     @Override
-    public UserDto register(UserRegisterRequest registerRequest) {
+    public UserDto register(UserRegisterRequest request) {
         UserDto userDto = null;
-        Optional<User> existedUser = userRepository.findByUsername(registerRequest.getUsername());
+        Optional<User> existedUser = userRepository.findByUsername(request.getUsername());
         if (!existedUser.isPresent()) {
-            User newUser = new User();
-            newUser.setName(registerRequest.getName());
-            newUser.setUsername(registerRequest.getUsername());
-            newUser.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+            User newUser = User.builder()
+                    .name(request.getName())
+                    .username(request.getUsername())
+                    .password(passwordEncoder.encode(request.getPassword()))
+                    .enable(true).accountNonExpired(true).accountNonLocked(true)
+                    .createDate(LocalDateTime.now())
+                    .updateDate(LocalDateTime.now())
+                    .build();
             //TODO sending email and the active link to active the account
-            newUser.setEnable(true);
-            newUser.setAccountNonExpired(true);
-            newUser.setAccountNonLocked(true);
-            newUser.setCreateDate(LocalDateTime.now());
-            newUser.setUpdateDate(LocalDateTime.now());
-
             Optional<Role> roleOptional = roleRepository.getRoleByName(RoleEnum.ROLE_USER.getValue());
             if (roleOptional.isPresent()) {
                 UserRole userRole = new UserRole();
@@ -85,6 +93,34 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new UsernameHasAlreadyExistedException("Username already exists!");
         }
         return userDto;
+    }
+
+    @Transactional
+    @Override
+    public RefreshTokenResponse refreshToken(String refreshToken) {
+
+        RefreshTokenResponse response = new RefreshTokenResponse();
+        Map<String, Object> claims = new HashMap<>();
+
+        if (!jwtUtils.validateJwtToken(refreshToken)) {
+            throw new InvalidJwtTokenException("Invalid refresh token or refresh token expired");
+        }
+
+        String username = jwtUtils.extractUsername(refreshToken);
+        Date eRefreshToken = jwtUtils.extractExpiration(refreshToken);
+        Optional<User> userOptional = userRepository.findByUsername(username);
+
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            Set<String> roles = user.getAuthorities().stream().map(item -> item.getAuthority()).collect(Collectors.toSet());
+            claims.put(JwtUtils.ROLES, roles);
+        }
+
+        String jwt = jwtUtils.generateToken(claims, username);
+        String newRefreshToken = jwtUtils.generateRefreshToken(username, eRefreshToken.getTime());
+        response.setJwtToken(jwt);
+        response.setRefreshToken(newRefreshToken);
+        return response;
     }
 
 }

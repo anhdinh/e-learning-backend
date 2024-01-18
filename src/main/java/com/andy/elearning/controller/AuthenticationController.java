@@ -1,5 +1,6 @@
 package com.andy.elearning.controller;
 
+import com.andy.elearning.dto.payload.response.RefreshTokenResponse;
 import com.andy.elearning.dto.payload.response.UserLoginResponse;
 import com.andy.elearning.dto.UserDto;
 import com.andy.elearning.dto.payload.request.UserLoginRequest;
@@ -8,10 +9,9 @@ import com.andy.elearning.service.AuthenticationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/authentication")
@@ -28,7 +28,14 @@ public class AuthenticationController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody UserLoginRequest userLoginRequest) {
-        UserLoginResponse userLoginResponse  = authenticationService.login(userLoginRequest);
+        UserLoginResponse userLoginResponse = authenticationService.login(userLoginRequest);
         return ResponseEntity.ok(userLoginResponse);
+    }
+
+    @GetMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestParam(name = "token") Optional<String> refreshTokenOp) {
+        String refreshToken = refreshTokenOp.orElseGet(() -> "not provided");
+        RefreshTokenResponse response = authenticationService.refreshToken(refreshToken);
+        return ResponseEntity.ok(response);
     }
 }

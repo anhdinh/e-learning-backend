@@ -61,6 +61,17 @@ public class JwtUtils implements Serializable {
     }
 
 
+    public String generateRefreshToken(String username,long expirationMs){
+        return Jwts
+                .builder()
+                .setSubject(username)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(expirationMs))
+                .signWith(key(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+
 
     public boolean isTokenValidate(String token,String username){
         final String sub = extractUsername(token);
@@ -84,11 +95,11 @@ public class JwtUtils implements Serializable {
         return false;
     }
 
-    private boolean isTokeExpired(String token) {
+    public boolean isTokeExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
-    private Date extractExpiration(String token) {
+    public Date extractExpiration(String token) {
         return extractClaim(token,Claims::getExpiration);
     }
 }
