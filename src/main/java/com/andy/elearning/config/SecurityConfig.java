@@ -3,6 +3,7 @@ package com.andy.elearning.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -16,6 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@Profile("production")
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
@@ -44,7 +46,7 @@ public class SecurityConfig {
                         auth -> {
                             auth
                                     .requestMatchers("/admin/**").hasRole("ADMIN")
-                                    .requestMatchers("/course/**").permitAll()
+                                    .requestMatchers("/course/**").hasAnyRole("USER","ADMIN")
                                     .requestMatchers("/authentication/**").permitAll()
                                     .requestMatchers("/system/**").permitAll()
                                     .anyRequest().authenticated();
